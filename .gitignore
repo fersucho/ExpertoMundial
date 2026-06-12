@@ -1,0 +1,26 @@
+# Directorios de dependencias
+node_modules/
+
+# Código compilado
+dist/
+lib/
+
+# Variables de entorno y configuración local (Secretos)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Sesión de WhatsApp Web (CRÍTICO: No subir a GitHub para evitar robo de cuenta)
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Logs de Firebase y depuración
+firebase-debug.log
+firestore-debug.log
+.firebase/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
