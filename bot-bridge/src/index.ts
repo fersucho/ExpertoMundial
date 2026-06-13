@@ -172,7 +172,7 @@ client.on('message_create', async (msg) => {
     } else {
         // Si no inicia con '!', verificamos si coincide exactamente con una letra del menú o 'menu'
         const lowerText = text.toLowerCase();
-        if (['a', 'b', 'c', 'd', 'e', 'menu'].includes(lowerText)) {
+        if (['a', 'b', 'c', 'd', 'e', 'f', 'menu'].includes(lowerText)) {
             command = '!' + lowerText;
         }
     }
@@ -216,7 +216,7 @@ client.on('message_create', async (msg) => {
 
     // 3. Aplicar Restricciones de Canal de Chat (Grupo vs Privado)
     const adminCommands = ['!crearpartido', '!resultado'];
-    const gameCommands = ['!menu', '!a', '!b', '!c', '!d', '!e', '!pronostico', '!registro', '!mispronosticos', '!ranking', '!tabla', '!reglas'];
+    const gameCommands = ['!menu', '!a', '!b', '!c', '!d', '!e', '!f', '!resultados', '!pronostico', '!registro', '!mispronosticos', '!ranking', '!tabla', '!reglas'];
 
     if (adminCommands.includes(command)) {
         if (chat.isGroup) {
@@ -245,7 +245,8 @@ client.on('message_create', async (msg) => {
                     `🇧 *Ver mis pronósticos*\n` +
                     `🇨 *Ver la tabla de posiciones*\n` +
                     `🇩 *Ver reglas del juego*\n` +
-                    `🇪 *Registrarme / Cambiar nickname*\n\n` +
+                    `🇪 *Registrarme / Cambiar nickname*\n` +
+                    `🇫 *Ver resultados de partidos*\n\n` +
                     `──────────────────\n` +
                     `_Ejemplo: Escribe la letra *A* para ver los partidos. O usa comandos con ! (ej: !pronostico 1 2-1)._`;
                 await msg.reply(menuText);
@@ -297,6 +298,13 @@ client.on('message_create', async (msg) => {
                 userStates.set(userId, { state: 'AWAITING_NICKNAME', timestamp: Date.now(), groupId });
                 const pushName = senderPushName !== 'Usuario' ? ` *${senderPushName}*` : '';
                 await msg.reply(`👤 *REGISTRO DE NICKNAME* ⚽\nHola${pushName}, por favor responde a este mensaje escribiendo el *nickname* que deseas usar en el juego:`);
+                break;
+            }
+
+            case '!f':
+            case '!resultados': {
+                const response = await axios.get(`${FUNCTIONS_URL}/obtenerResultados`, { headers });
+                await msg.reply(response.data.message);
                 break;
             }
 

@@ -162,15 +162,24 @@ export const obtenerPartidos = onRequest({ invoker: 'public' }, async (req, res)
 
     try {
         const snapshot = await db.collection('matches').orderBy('date', 'asc').get();
-        if (snapshot.empty) {
-            res.json({ message: '📅 No hay partidos registrados en este momento.' });
+        
+        // Filtrar en memoria solo los partidos pendientes
+        const pendingMatches: any[] = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.status === 'pending') {
+                pendingMatches.push({ id: doc.id, ...data });
+            }
+        });
+
+        if (pendingMatches.length === 0) {
+            res.json({ message: '📅 No hay partidos pendientes para pronosticar en este momento.' });
             return;
         }
 
         let responseText = '⚽ *PARTIDOS DISPONIBLES* ⚽\n──────────────────\n';
         
-        snapshot.forEach(doc => {
-            const match = doc.data();
+        pendingMatches.forEach(match => {
             const date = match.date.toDate();
             
             // Formatear fecha a español de Ecuador (hora de Quito)
@@ -184,12 +193,8 @@ export const obtenerPartidos = onRequest({ invoker: 'public' }, async (req, res)
                 hour12: false
             });
 
-            const statusEmoji = match.status === 'finished' ? '🏁 Finalizado' : match.status === 'playing' ? '🎮 Jugándose' : '⏳ Pendiente';
-            const scoreText = match.status === 'finished' ? ` (${match.scoreA}-${match.scoreB})` : '';
-
-            responseText += `👉 *ID: ${doc.id}* | *${match.teamA} vs ${match.teamB}*${scoreText}\n`;
-            responseText += `📅 Límite: ${formattedDate}\n`;
-            responseText += `⚙️ Estado: ${statusEmoji}\n\n`;
+            responseText += `👉 *ID: ${match.id}* | *${match.teamA} vs ${match.teamB}*\n`;
+            responseText += `📅 Límite: ${formattedDate}\n\n`;
         });
 
         responseText += 
@@ -496,5 +501,46 @@ export const actualizarResultado = onRequest({ invoker: 'public' }, async (req, 
         res.json({ message: summaryText });
     } catch (error: any) {
         res.status(500).json({ message: `Error al actualizar resultado: ${error.message}` });
+    }
+});
+
+/**
+ * 8. Obtener resultados de partidos finalizados o jugándose
+ */
+export const obtenerResultados = onRequest({ invoker: 'public' }, async (req, res) => {
+    if (!isAuthorized(req)) return sendUnauthorized(res);
+
+    try {
+        const snapshot = await db.collection('matches').orderBy('date', 'desc').get();
+        
+        // Filtrar partidos finalizados o en juego
+        const finishedMatches: any[] = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.status === 'finished' || data.status === 'playing') {
+                finishedMatches.push({ id: doc.id, ...data });
+            }
+        });
+
+        if (finishedMatches.length === 0) {
+            res.json({ message: '🏁 No hay resultados registrados en este momento.' });
+            return;
+        }
+
+        let responseText = '🏁 *RESULTADOS DE PARTIDOS* 🏁\n──────────────────\n';
+        
+        finishedMatches.forEach(match => {
+            const statusEmoji = match.status === 'finished' ? '🏁' : '🎮';
+            const scoreText = match.status === 'finished' 
+                ? `*${match.scoreA} - ${match.scoreB}*`
+                : `_Jugándose_`;
+
+            responseText += `👉 *ID: ${match.id}* | *${match.teamA}* ${scoreText} *${match.teamB}* ${statusEmoji}\n\n`;
+        });
+
+        responseText += '──────────────────';
+        res.json({ message: responseText });
+    } catch (error: any) {
+        res.status(500).json({ message: `Error al obtener resultados: ${error.message}` });
     }
 });
