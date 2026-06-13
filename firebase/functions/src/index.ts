@@ -84,7 +84,7 @@ export const registrarUsuario = onRequest({ invoker: 'public' }, async (req, res
             });
         } else {
             res.json({
-                message: `🎉 ¡Hola, *${name}*! Te has registrado exitosamente. Escribe *A* para ver los partidos y comenzar a apostar. ⚽`
+                message: `🎉 ¡Hola, *${name}*! Te has registrado exitosamente. Escribe *A* para ver los partidos y comenzar a jugar. ⚽`
             });
         }
     } catch (error: any) {

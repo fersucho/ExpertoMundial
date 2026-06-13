@@ -47,7 +47,7 @@ graph TD
     *   `/matches/{matchId}`: Partidos del torneo (Equipos, fecha límite, estado y marcador oficial).
     *   `/predictions/{userId_matchId_groupId}`: Pronósticos individuales aislados por grupo de WhatsApp.
     *   `/groups/{groupId}/members/{userId}`: Tabla de posiciones aislada y rendimiento de cada usuario en el contexto de ese grupo.
-*   **Manejo de Zona Horaria:** Todas las fechas y validaciones de límites de pronósticos se procesan utilizando el huso horario de **Quito/Ecuador (UTC-5 / America/Guayaquil)**, garantizando que el cierre de apuestas coincida de forma exacta con la hora del partido sin verse afectado por la hora UTC del servidor de Google.
+*   **Manejo de Zona Horaria:** Todas las fechas y validaciones de límites de pronósticos se procesan utilizando el huso horario de **Quito/Ecuador (UTC-5 / America/Guayaquil)**, garantizando que el cierre de los pronósticos coincida de forma exacta con la hora del partido sin verse afectado por la hora UTC del servidor de Google.
 
 ---
 
@@ -146,7 +146,7 @@ Ejemplo: Escribe la letra A para ver los partidos. O usa comandos con ! (ej: !pr
 ### Detalle de Opciones y Comandos
 
 #### Opción A (o `!partidos`): Ver Partidos
-Lista los partidos registrados que se encuentran en estado **pendiente** (disponibles para pronosticar), indicando su ID y la hora límite local para apostar.
+Lista los partidos registrados que se encuentran en estado **pendiente** (disponibles para pronosticar), indicando su ID y la hora límite local para pronosticar.
 
 #### Opción B (o `!mispronosticos`): Mis Pronósticos en el Grupo
 Muestra los pronósticos que has enviado para el grupo actual, detallando los puntos que ganaste en cada uno si el partido ya concluyó.
@@ -184,7 +184,7 @@ Para hacer el juego fluido e intuitivo en chats grupales concurridos, los usuari
 
 > [!TIP]
 > *   Puedes modificar tu pronóstico las veces que quieras antes de que inicie el partido.
-> *   El sistema valida automáticamente que no puedas ingresar apuestas después de la hora programada del encuentro.
+> *   El sistema valida automáticamente que no puedas ingresar pronósticos después de la hora programada del encuentro.
 
 ---
 
