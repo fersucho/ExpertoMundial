@@ -17,11 +17,11 @@ graph TD
         AD[Admin en Chat Privado]
     end
 
-    subgraph Local Environment (Node.js)
+    subgraph "Local Environment (Node.js)"
         BB[bot-bridge - Cliente Local]
     end
 
-    subgraph Firebase Cloud (Backend)
+    subgraph "Firebase Cloud (Backend)"
         FC[Cloud Functions v2]
         DB[(Firestore Database)]
     end

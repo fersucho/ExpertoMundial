@@ -10,6 +10,15 @@ dotenv.config();
 const FUNCTIONS_URL = process.env.FIREBASE_FUNCTIONS_URL || 'http://127.0.0.1:5001/experto-mundial/us-central1';
 const SECRET_TOKEN = process.env.BOT_SECRET_TOKEN || 'my_super_secret_token_12345';
 
+// Función helper para limpiar los IDs de usuario de WhatsApp de sufijos multi-dispositivo y conservar el dominio original (@c.us o @lid)
+function cleanUserId(rawId: string): string {
+    if (!rawId) return '';
+    const parts = rawId.split('@');
+    const user = parts[0].split(':')[0];
+    const domain = parts[1] || 'c.us';
+    return `${user}@${domain}`;
+}
+
 console.log('🤖 Inicializando puente de WhatsApp...');
 console.log(`📡 URL de Cloud Functions: ${FUNCTIONS_URL}`);
 
@@ -43,6 +52,8 @@ client.on('ready', async () => {
     
     try {
         const botUserId = client.info.wid.user + '@c.us';
+        const botSerializedId = cleanUserId(client.info.wid._serialized);
+        
         console.log(`👑 Registrando al bot (${botUserId}) como Administrador en Firestore...`);
         
         // Cabecera de autorización para las Cloud Functions
@@ -58,6 +69,16 @@ client.on('ready', async () => {
         }, { headers });
         
         console.log(`👑 Admin Autoregistro: ${response.data.message}`);
+
+        if (botSerializedId && botSerializedId !== botUserId) {
+            console.log(`👑 Registrando identificador LID del bot (${botSerializedId}) como Administrador en Firestore...`);
+            const responseAlt = await axios.post(`${FUNCTIONS_URL}/registrarUsuario`, {
+                userId: botSerializedId,
+                name: 'Admin (LID)',
+                isAdminCreation: true
+            }, { headers });
+            console.log(`👑 Admin Autoregistro (LID): ${responseAlt.data.message}`);
+        }
     } catch (error: any) {
         console.error('❌ Error en el auto-registro del administrador:', error.message);
     }
@@ -74,7 +95,7 @@ client.on('message_create', async (msg) => {
 
     // El ID del usuario que envía el mensaje (limpiamos sufijos de multi-dispositivo como :1, :2, etc. para evitar inconsistencias en la base de datos)
     const rawUserId = msg.author || msg.from;
-    const userId = rawUserId.split('@')[0].split(':')[0] + '@' + (rawUserId.split('@')[1] || 'c.us');
+    const userId = cleanUserId(rawUserId);
 
     // Cabecera de autorización para las Cloud Functions
     const headers = {
