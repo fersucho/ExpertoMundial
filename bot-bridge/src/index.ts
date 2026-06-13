@@ -19,6 +19,10 @@ function cleanUserId(rawId: string): string {
     return `${user}@${domain}`;
 }
 
+// Variables globales para la identidad del bot y administración
+let botUserId = '';
+const registeredLIDs = new Set<string>();
+
 console.log('🤖 Inicializando puente de WhatsApp...');
 console.log(`📡 URL de Cloud Functions: ${FUNCTIONS_URL}`);
 
@@ -61,8 +65,12 @@ client.on('ready', async () => {
     console.log('✅ ¡El bot de WhatsApp está LISTO y conectado!');
     
     try {
-        const botUserId = client.info.wid.user + '@c.us';
+        botUserId = client.info.wid.user + '@c.us';
         const botSerializedId = cleanUserId(client.info.wid._serialized);
+        
+        // Registrar en el set local de LIDs autorizados
+        registeredLIDs.add(botUserId);
+        registeredLIDs.add(botSerializedId);
         
         console.log(`👑 Registrando al bot (${botUserId}) como Administrador en Firestore...`);
         
@@ -174,6 +182,23 @@ client.on('message_create', async (msg) => {
 
     const chat = await msg.getChat();
     const groupId = chat.isGroup ? chat.id._serialized : null;
+    
+    // Auto-registro dinámico para el identificador LID alternativo del administrador
+    // Si el mensaje es enviado por el propio usuario (fromMe) en un chat privado y no está registrado aún
+    if (msg.fromMe && !chat.isGroup && userId !== botUserId && !registeredLIDs.has(userId)) {
+        console.log(`👑 Actividad del dueño detectada en chat privado. Auto-registrando LID ${userId} como Admin...`);
+        try {
+            await axios.post(`${FUNCTIONS_URL}/registrarUsuario`, {
+                userId,
+                name: 'Admin (LID Auto)',
+                isAdminCreation: true
+            }, { headers });
+            registeredLIDs.add(userId);
+            console.log(`👑 LID ${userId} auto-registrado en Firestore con éxito.`);
+        } catch (err: any) {
+            console.error(`❌ Error al auto-registrar LID de administrador:`, err.message);
+        }
+    }
     
     // Obtener el nombre del remitente registrado en su WhatsApp de forma segura manejando errores de deviceWid
     let senderPushName = 'Usuario';
