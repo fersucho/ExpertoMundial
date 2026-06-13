@@ -8,7 +8,12 @@ import * as path from 'path';
 dotenv.config();
 
 const FUNCTIONS_URL = process.env.FIREBASE_FUNCTIONS_URL || 'http://127.0.0.1:5001/experto-mundial/us-central1';
-const SECRET_TOKEN = process.env.BOT_SECRET_TOKEN || 'my_super_secret_token_12345';
+const SECRET_TOKEN = process.env.BOT_SECRET_TOKEN;
+
+if (!SECRET_TOKEN) {
+    console.error('❌ ERROR CRÍTICO: La variable de entorno BOT_SECRET_TOKEN no está definida en el archivo .env.');
+    process.exit(1);
+}
 
 // Función helper para limpiar los IDs de usuario de WhatsApp de sufijos multi-dispositivo y conservar el dominio original (@c.us o @lid)
 function cleanUserId(rawId: string): string {

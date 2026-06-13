@@ -59,10 +59,16 @@ Tanto el bot-bridge como el backend requieren configuraciones específicas en su
 ```env
 FIREBASE_FUNCTIONS_URL=https://<REGION>-<PROJECT_ID>.cloudfunctions.net
 BOT_SECRET_TOKEN=tu_token_seguro_de_comunicacion
+
+# Opcional: Ruta al ejecutable de Chromium (ej. /usr/bin/chromium-browser en Raspberry Pi)
+# PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ```
 
 ### En el entorno de Firebase (Cloud Functions):
-El token `BOT_SECRET_TOKEN` se despliega como variable de configuración en Cloud Run/Cloud Functions para la validación de peticiones entrantes.
+El token `BOT_SECRET_TOKEN` se despliega como variable de configuración.
+
+> [!WARNING]
+> **Seguridad:** Se han eliminado los tokens por defecto del código fuente. Es obligatorio definir la variable `BOT_SECRET_TOKEN` tanto en el `.env` del bot-bridge como en el `.env` de las Cloud Functions. Si no se configuran, el sistema denegará todas las peticiones con un error `401 Unauthorized` o el bot se detendrá en el arranque por seguridad.
 
 ---
 
@@ -131,6 +137,7 @@ Por favor, escribe únicamente la letra de la opción que deseas realizar:
 🇨 Ver la tabla de posiciones
 🇩 Ver reglas del juego
 🇪 Registrarme / Cambiar nickname
+🇫 Ver resultados de partidos
 
 ──────────────────
 Ejemplo: Escribe la letra A para ver los partidos. O usa comandos con ! (ej: !pronostico 1 2-1).
@@ -139,7 +146,7 @@ Ejemplo: Escribe la letra A para ver los partidos. O usa comandos con ! (ej: !pr
 ### Detalle de Opciones y Comandos
 
 #### Opción A (o `!partidos`): Ver Partidos
-Lista todos los partidos registrados, indicando su ID, el estado actual (Pendiente/Jugándose/Finalizado), la hora límite local para apostar y el resultado real si ya finalizó.
+Lista los partidos registrados que se encuentran en estado **pendiente** (disponibles para pronosticar), indicando su ID y la hora límite local para apostar.
 
 #### Opción B (o `!mispronosticos`): Mis Pronósticos en el Grupo
 Muestra los pronósticos que has enviado para el grupo actual, detallando los puntos que ganaste en cada uno si el partido ya concluyó.
@@ -151,8 +158,11 @@ Devuelve el ranking del grupo actual. Muestra las posiciones ordenadas por punto
 Explica brevemente la distribución de puntos (3 puntos por marcador exacto, 1 punto por acertar ganador/empate, 0 por fallo).
 
 #### Opción E (o `!registro`): Registrarse / Modificar Apodo
-Inicia un flujo conversacional. El bot enviará una pregunta directa y tendrás 2 minutos para responder con el nombre/apodo que quieres usar en la quiniela.
+Inicia un flujo conversacional. El bot registrará tu nickname tras responder en un plazo de 2 minutos.
 *   *Alternativa directa:* Puedes registrarte sin pasar por el flujo escribiendo `!registro [TuApodo]` (ej: `!registro ElDiego10`).
+
+#### Opción F (o `!resultados`): Ver Resultados de Partidos
+Muestra un resumen de los partidos que ya han finalizado o están jugándose, indicando los marcadores oficiales. Los resultados se ordenan con los más recientes primero.
 
 ---
 

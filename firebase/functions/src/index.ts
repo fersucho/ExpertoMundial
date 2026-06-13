@@ -5,10 +5,14 @@ import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 initializeApp();
 const db = getFirestore();
 
-const SECRET_TOKEN = process.env.BOT_SECRET_TOKEN || 'my_super_secret_token_12345';
+const SECRET_TOKEN = process.env.BOT_SECRET_TOKEN;
 
 // Función auxiliar para validar el token de autorización
 function isAuthorized(req: any): boolean {
+    if (!SECRET_TOKEN) {
+        console.error('❌ ERROR: La variable de entorno BOT_SECRET_TOKEN no está configurada en la Cloud Function.');
+        return false;
+    }
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return false;
