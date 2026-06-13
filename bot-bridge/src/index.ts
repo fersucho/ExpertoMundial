@@ -46,6 +46,16 @@ client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 });
 
+// Monitorear pantalla de carga
+client.on('loading_screen', (percent, message) => {
+    console.log(`⏳ Cargando WhatsApp Web: ${percent}% - ${message}`);
+});
+
+// Capturar fallos de autenticación
+client.on('auth_failure', (msg) => {
+    console.error('❌ Error de autenticación:', msg);
+});
+
 // Confirmación de inicio de sesión y auto-registro de Administrador
 client.on('ready', async () => {
     console.log('✅ ¡El bot de WhatsApp está LISTO y conectado!');
