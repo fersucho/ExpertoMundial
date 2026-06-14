@@ -239,13 +239,13 @@ export const pronosticar = onRequest({ invoker: 'public' }, async (req, res) => 
         const matchRef = db.collection('matches').doc(matchId);
         const matchDoc = await matchRef.get();
         if (!matchDoc.exists) {
-            res.json({ message: `⚠️ El partido con ID *${matchId}* no existe.` });
+            res.status(400).json({ message: `⚠️ El partido con ID *${matchId}* no existe.` });
             return;
         }
 
         const match = matchDoc.data()!;
         if (match.status !== 'pending') {
-            res.json({ message: `⚠️ No puedes pronosticar este partido. Ya se encuentra en estado: *${match.status}*.` });
+            res.status(400).json({ message: `⚠️ No puedes pronosticar este partido. Ya se encuentra en estado: *${match.status}*.` });
             return;
         }
 
@@ -253,7 +253,7 @@ export const pronosticar = onRequest({ invoker: 'public' }, async (req, res) => 
         const limitTime = match.date.toDate().getTime();
         const currentTime = Date.now();
         if (currentTime > limitTime) {
-            res.json({ message: `⚠️ ¡Tiempo agotado! El límite para pronosticar era hasta la hora programada del partido.` });
+            res.status(400).json({ message: `⚠️ ¡Tiempo agotado! El límite para pronosticar era hasta la hora programada del partido.` });
             return;
         }
 
