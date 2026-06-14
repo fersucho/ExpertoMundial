@@ -114,8 +114,17 @@ client.on('ready', async () => {
             authorizedGroups.add(gId);
         }
         console.log(`📡 Se cargaron ${authorizedGroups.size} grupos autorizados.`);
+
+        // Cargar lista de administradores
+        console.log('👑 Cargando lista de administradores desde Firestore...');
+        const adminsResponse = await axios.get(`${FUNCTIONS_URL}/obtenerAdministradores`, { headers });
+        const adminsList = adminsResponse.data.admins || [];
+        for (const adminId of adminsList) {
+            registeredLIDs.add(adminId);
+        }
+        console.log(`👑 Se cargaron ${registeredLIDs.size} administradores en caché.`);
     } catch (error: any) {
-        console.error('❌ Error en la inicialización (auto-registro o carga de grupos autorizados):', error.message);
+        console.error('❌ Error en la inicialización (auto-registro, carga de grupos o administradores):', error.message);
     }
 });
 

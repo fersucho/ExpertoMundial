@@ -630,3 +630,21 @@ export const obtenerGruposAutorizados = onRequest({ invoker: 'public' }, async (
         res.status(500).json({ message: `Error al obtener grupos autorizados: ${error.message}` });
     }
 });
+
+/**
+ * 12. Obtener la lista de administradores
+ */
+export const obtenerAdministradores = onRequest({ invoker: 'public' }, async (req, res) => {
+    if (!isAuthorized(req)) return sendUnauthorized(res);
+
+    try {
+        const snapshot = await db.collection('users').where('admin', '==', true).get();
+        const admins: string[] = [];
+        snapshot.forEach(doc => {
+            admins.push(doc.id);
+        });
+        res.json({ admins });
+    } catch (error: any) {
+        res.status(500).json({ message: `Error al obtener administradores: ${error.message}` });
+    }
+});
