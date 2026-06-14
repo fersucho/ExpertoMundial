@@ -323,6 +323,11 @@ client.on('message_create', async (msg) => {
             }
 
             case '!pronosticomulti': {
+                if (multiPredictions.length > 10) {
+                    await msg.reply('⚠️ *Límite excedido:* Solo puedes enviar un máximo de 10 pronósticos por mensaje para evitar saturar el chat.');
+                    break;
+                }
+
                 console.log(`🔮 Procesando ${multiPredictions.length} pronósticos de ${senderPushName} (${userId})`);
                 
                 const promises = multiPredictions.map(async (pred) => {
