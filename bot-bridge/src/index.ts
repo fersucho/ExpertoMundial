@@ -153,7 +153,7 @@ client.on('message_create', async (msg) => {
 
     // --- NUEVO: Validar autorización de grupo ---
     if (chat.isGroup && groupId && !authorizedGroups.has(groupId)) {
-        const isMinAdmin = registeredLIDs.has(userId);
+        const isMinAdmin = registeredLIDs.has(userId) || msg.fromMe;
         const isActivationCommand = text.toLowerCase().split(/\s+/)[0] === '!activargrupo';
         if (!isMinAdmin || !isActivationCommand) {
             return; // Ignorar en silencio
