@@ -166,25 +166,32 @@ Muestra un resumen de los partidos que ya han finalizado o están jugándose, in
 
 ---
 
-## 🔮 Cómo Enviar un Pronóstico Rápido
+## 🔮 Cómo Enviar Pronósticos Rápidos
 
-Para hacer el juego fluido e intuitivo en chats grupales concurridos, los usuarios pueden enviar pronósticos directos **sin usar el prefijo `!`**:
+Para hacer el juego fluido e intuitivo en chats grupales concurridos, los usuarios pueden enviar pronósticos directos **sin usar el prefijo `!`** de dos formas:
 
-*   **Formato de Pronóstico Rápido:** `[ID_PARTIDO]: [GOLES_LOCAL]-[GOLES_VISITANTE]`
+### 1. Pronóstico Individual
+*   **Formato:** `[ID_PARTIDO]: [GOLES_LOCAL]-[GOLES_VISITANTE]`
 *   **Ejemplo:**
     ```text
     1: 2-0
     ```
-*   **Respuesta del bot:**
+
+### 2. Múltiples Pronósticos en un solo mensaje
+Puedes enviar varios pronósticos a la vez escribiendo uno por línea:
+*   **Ejemplo:**
     ```text
-    ✅ ¡Pronóstico guardado!
-    🔮 MessiFans predijo para este grupo:
-    👉 Argentina 2 - 0 Brasil
+    5: 0-3
+    6: 1-2
+    7: 0-3
     ```
 
+> [!IMPORTANT]
+> **Filtro de Seguridad:** El bot solo procesará mensajes en los que **todas las líneas no vacías** sean pronósticos válidos. Si incluyes saludos, comentarios o cualquier otro texto que no siga el formato `ID: Goles-Goles`, el bot ignorará el mensaje por completo para no interferir en el chat del grupo.
+
 > [!TIP]
-> *   Puedes modificar tu pronóstico las veces que quieras antes de que inicie el partido.
-> *   El sistema valida automáticamente que no puedas ingresar pronósticos después de la hora programada del encuentro.
+> *   Puedes modificar tus pronósticos las veces que quieras antes de que inicie cada partido.
+> *   El sistema valida automáticamente que no puedas ingresar o modificar pronósticos después de la hora programada de inicio del encuentro correspondiente.
 
 ---
 

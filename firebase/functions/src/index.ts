@@ -206,7 +206,7 @@ export const obtenerPartidos = onRequest({ invoker: 'public' }, async (req, res)
             '🔮 *CÓMO PRONOSTICAR:*\n' +
             'Escribe tu pronóstico de esta forma:\n' +
             '👉 *[ID]: [Marcador]*\n' +
-            '_Ejemplo: *1: 2-1* (o también *!pronostico 1 2-1*)_';
+            '_Ejemplo: *1: 2-1*_';
         res.json({ message: responseText });
     } catch (error: any) {
         res.status(500).json({ message: `Error al obtener partidos: ${error.message}` });

@@ -159,22 +159,30 @@ client.on('message_create', async (msg) => {
         }
     }
 
-    // 2. Determinar si el mensaje es un comando, una letra del menú principal o una predicción rápida (ej: "1: 2-0")
+    // 2. Determinar si el mensaje es un comando, una letra del menú principal o predicciones rápidas
     let command = '';
     let args: string[] = [];
+    let multiPredictions: Array<{ matchId: string; predictA: number; predictB: number }> = [];
 
-    // Expresión regular para capturar el patrón de predicción rápida: [ID]: [GolesA]-[GolesB]
+    // Dividimos por líneas y limpiamos espacios vacíos
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line !== '');
     const quickPredictionRegex = /^(\d+)\s*:\s*(\d+)-(\d+)$/;
-    const predictionMatch = text.match(quickPredictionRegex);
+    const allLinesArePredictions = lines.length > 0 && lines.every(line => quickPredictionRegex.test(line));
 
-    if (text.startsWith('!')) {
+    if (allLinesArePredictions) {
+        command = '!pronosticomulti';
+        multiPredictions = lines.map(line => {
+            const match = line.match(quickPredictionRegex)!;
+            return {
+                matchId: match[1],
+                predictA: parseInt(match[2], 10),
+                predictB: parseInt(match[3], 10)
+            };
+        });
+    } else if (text.startsWith('!')) {
         const parts = text.split(/\s+/);
         command = parts[0].toLowerCase();
         args = parts.slice(1);
-    } else if (predictionMatch) {
-        // Mapeamos internamente al comando de pronóstico
-        command = '!pronostico';
-        args = [predictionMatch[1], `${predictionMatch[2]}-${predictionMatch[3]}`];
     } else {
         // Si no inicia con '!', verificamos si coincide exactamente con una letra del menú o 'menu'
         const lowerText = text.toLowerCase();
@@ -222,7 +230,7 @@ client.on('message_create', async (msg) => {
 
     // 3. Aplicar Restricciones de Canal de Chat (Grupo vs Privado)
     const adminCommands = ['!crearpartido', '!resultado'];
-    const gameCommands = ['!menu', '!a', '!b', '!c', '!d', '!e', '!f', '!resultados', '!pronostico', '!registro', '!mispronosticos', '!ranking', '!tabla', '!reglas'];
+    const gameCommands = ['!menu', '!a', '!b', '!c', '!d', '!e', '!f', '!resultados', '!pronostico', '!pronosticomulti', '!registro', '!mispronosticos', '!ranking', '!tabla', '!reglas'];
 
     if (adminCommands.includes(command)) {
         if (chat.isGroup) {
@@ -254,7 +262,7 @@ client.on('message_create', async (msg) => {
                     `🇪 *Registrarme / Cambiar nickname*\n` +
                     `🇫 *Ver resultados de partidos*\n\n` +
                     `──────────────────\n` +
-                    `_Ejemplo: Escribe la letra *A* para ver los partidos. O usa comandos con ! (ej: !pronostico 1 2-1)._`;
+                    `_Ejemplo: Escribe la letra *A* para ver los partidos y comenzar a jugar._`;
                 await msg.reply(menuText);
                 break;
             }
@@ -311,6 +319,46 @@ client.on('message_create', async (msg) => {
             case '!resultados': {
                 const response = await axios.get(`${FUNCTIONS_URL}/obtenerResultados`, { headers });
                 await msg.reply(response.data.message);
+                break;
+            }
+
+            case '!pronosticomulti': {
+                console.log(`🔮 Procesando ${multiPredictions.length} pronósticos de ${senderPushName} (${userId})`);
+                
+                const promises = multiPredictions.map(async (pred) => {
+                    try {
+                        const response = await axios.post(`${FUNCTIONS_URL}/pronosticar`, {
+                            userId,
+                            matchId: pred.matchId,
+                            predictA: pred.predictA,
+                            predictB: pred.predictB,
+                            groupId
+                        }, { headers });
+                        
+                        const msgMatch = response.data.message.match(/👉\s*\*(.+?)\*/);
+                        const matchDetails = msgMatch ? msgMatch[1] : `ID ${pred.matchId}: ${pred.predictA} - ${pred.predictB}`;
+                        return `• ${matchDetails} ✅ Guardado`;
+                    } catch (error: any) {
+                        let errMsg = 'Error de conexión';
+                        if (error.response && error.response.data && error.response.data.message) {
+                            errMsg = error.response.data.message;
+                        }
+                        const cleanErr = errMsg.replace(/^[⚠️❌\s]+/, '');
+                        return `• ID ${pred.matchId} (${pred.predictA}-${pred.predictB}): ⚠️ ${cleanErr}`;
+                    }
+                });
+                
+                const responseLines = await Promise.all(promises);
+                
+                const summaryText = 
+                    `🔮 *PRONÓSTICOS PROCESADOS* 🔮\n` +
+                    `──────────────────\n` +
+                    `👤 *${senderPushName}*\n\n` +
+                    responseLines.join('\n') + `\n\n` +
+                    `──────────────────\n` +
+                    `_Usa la letra *B* para ver tus pronósticos activos._`;
+                    
+                await msg.reply(summaryText);
                 break;
             }
 
