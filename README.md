@@ -211,3 +211,84 @@ Puedes enviar varios pronósticos a la vez escribiendo uno por línea:
    npm run dev
    ```
 4. Escanea el código QR que se dibuja en la consola desde la app móvil de WhatsApp (Dispositivos Vinculados).
+
+---
+
+## 🍓 Despliegue Técnico en Raspberry Pi 4 (Servidor Doméstico 24/7)
+
+Esta sección sirve como memoria técnica para desplegar este bot (o bots similares basados en Puppeteer/Chromium) en una Raspberry Pi 4 (4GB RAM) corriendo de forma permanente en segundo plano.
+
+### 1. Preparación del Sistema Operativo (Headless)
+Se recomienda utilizar **Raspberry Pi OS Lite (64-bit)** (basado en Debian Bookworm) porque no consume recursos en interfaz gráfica (GUI), dejando toda la memoria y procesador libres para Puppeteer.
+
+Durante el flasheo con *Raspberry Pi Imager*:
+*   Habilitar **SSH** para control remoto.
+*   Configurar credenciales de **Wi-Fi** locales.
+*   Crear el usuario principal (ej: `pi` o `fo`).
+
+### 2. Ajuste Crítico para Puppeteer en Arquitectura ARM (Procesador Raspberry)
+Puppeteer descarga por defecto una versión de Chromium compilada para arquitecturas `x86/x64`. Para que funcione en el procesador ARM de la Raspberry Pi, se debe:
+
+1.  Instalar el navegador Chromium nativo del sistema operativo:
+    ```bash
+    sudo apt update
+    sudo apt install chromium-browser -y
+    ```
+2.  Consultar la ruta exacta de instalación de ese Chromium ejecutando `which chromium` o `which chromium-browser` (típicamente devuelve `/usr/bin/chromium` o `/usr/bin/chromium-browser`).
+3.  Configurar la variable de entorno `PUPPETEER_EXECUTABLE_PATH` en el archivo `.env` del bot-bridge apuntando a esa ruta. El código la cargará dinámicamente:
+    ```typescript
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined
+    ```
+
+### 3. Instalación de Node.js y Gestor de Procesos (PM2)
+Para instalar Node.js 20 y asegurar que el bot se mantenga encendido indefinidamente y sobreviva a reinicios eléctricos:
+
+```bash
+# Instalar Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Instalar PM2 globalmente
+sudo npm install -g pm2
+```
+
+### 4. Automatización del Arranque en el Sistema (systemd)
+Para configurar PM2 como un servicio del sistema que se inicie al encender la Raspberry Pi:
+
+1.  Ejecutar el comando de configuración:
+    ```bash
+    pm2 startup
+    ```
+2.  Copiar la línea de comando `sudo env PATH=...` que arroje la consola, pegarla y ejecutarla.
+3.  Levantar el bot por primera vez:
+    ```bash
+    cd ExpertoMundial/bot-bridge
+    pm2 start dist/index.js --name "quiniela-bot"
+    ```
+4.  **Guardar el estado actual:**
+    ```bash
+    pm2 save
+    ```
+
+#### ⚠️ Persistencia del Usuario en Consola Lite (Linger)
+En servidores Linux sin escritorio (Lite), el sistema operativo apaga todos los procesos de tu usuario cuando cierras la sesión SSH. Para evitar que PM2 y el bot se apaguen al cerrar tu terminal en la PC, es obligatorio activar el *lingering* para el usuario de la Raspberry Pi:
+```bash
+sudo loginctl enable-linger fo
+```
+
+### 5. Control Remoto Global con Raspberry Pi Connect (Sin abrir puertos)
+Para administrar y ver los logs del bot desde cualquier parte del mundo de forma segura mediante el navegador web, sin configurar VPN ni redireccionamiento de puertos en el router:
+
+1.  Instalar la versión de terminal de Raspberry Pi Connect:
+    ```bash
+    sudo apt install rpi-connect-lite -y
+    ```
+2.  Iniciar sesión para vincular la cuenta de Raspberry Pi ID:
+    ```bash
+    rpi-connect signin
+    ```
+3.  Visitar el enlace único que dibuja la consola para autorizar el emparejamiento.
+4.  Asegurar que el servicio corra de fondo:
+    ```bash
+    systemctl --user enable --now rpi-connect
+    ```
