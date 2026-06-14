@@ -151,6 +151,14 @@ client.on('message_create', async (msg) => {
         }
     }
 
+    // --- NUEVO: Validar chat privado (solo admin) ---
+    if (!chat.isGroup) {
+        const isMinAdmin = registeredLIDs.has(userId) || msg.fromMe;
+        if (!isMinAdmin) {
+            return; // Ignorar en silencio
+        }
+    }
+
     // 1. Verificar si el usuario tiene un estado activo (ej: esperando nickname)
     const userState = userStates.get(userId);
     if (userState) {
