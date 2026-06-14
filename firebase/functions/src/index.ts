@@ -548,3 +548,85 @@ export const obtenerResultados = onRequest({ invoker: 'public' }, async (req, re
         res.status(500).json({ message: `Error al obtener resultados: ${error.message}` });
     }
 });
+
+/**
+ * 9. Autorizar un grupo (Admin)
+ */
+export const autorizarGrupo = onRequest({ invoker: 'public' }, async (req, res) => {
+    if (!isAuthorized(req)) return sendUnauthorized(res);
+
+    const { userId, groupId } = req.body;
+    if (!userId || !groupId) {
+        res.status(400).json({ message: 'Faltan parámetros: userId y groupId son obligatorios.' });
+        return;
+    }
+
+    try {
+        // Validar rol de administrador
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists || !userDoc.data()?.admin) {
+            res.status(403).json({ message: '⚠️ No tienes permisos de administrador para realizar esta acción.' });
+            return;
+        }
+
+        await db.collection('authorizedGroups').doc(groupId).set({
+            authorized: true,
+            authorizedAt: FieldValue.serverTimestamp(),
+            authorizedBy: userId
+        });
+
+        res.json({
+            message: `🔓 *GRUPO AUTORIZADO* 🔓\n──────────────────\nEste grupo ha sido activado para jugar a *Experto Mundial*.\n¡Que comience el juego! ⚽`
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: `Error al autorizar grupo: ${error.message}` });
+    }
+});
+
+/**
+ * 10. Desautorizar un grupo (Admin)
+ */
+export const desautorizarGrupo = onRequest({ invoker: 'public' }, async (req, res) => {
+    if (!isAuthorized(req)) return sendUnauthorized(res);
+
+    const { userId, groupId } = req.body;
+    if (!userId || !groupId) {
+        res.status(400).json({ message: 'Faltan parámetros: userId y groupId son obligatorios.' });
+        return;
+    }
+
+    try {
+        // Validar rol de administrador
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists || !userDoc.data()?.admin) {
+            res.status(403).json({ message: '⚠️ No tienes permisos de administrador para realizar esta acción.' });
+            return;
+        }
+
+        await db.collection('authorizedGroups').doc(groupId).delete();
+
+        res.json({
+            message: `🔒 *GRUPO DESACTIVADO* 🔒\n──────────────────\nEl bot de *Experto Mundial* ha sido desactivado en este grupo y ya no responderá a los comandos.`
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: `Error al desautorizar grupo: ${error.message}` });
+    }
+});
+
+/**
+ * 11. Obtener la lista de grupos autorizados
+ */
+export const obtenerGruposAutorizados = onRequest({ invoker: 'public' }, async (req, res) => {
+    if (!isAuthorized(req)) return sendUnauthorized(res);
+
+    try {
+        const snapshot = await db.collection('authorizedGroups').get();
+        const groups: string[] = [];
+        snapshot.forEach(doc => {
+            groups.push(doc.id);
+        });
+        res.json({ groups });
+    } catch (error: any) {
+        res.status(500).json({ message: `Error al obtener grupos autorizados: ${error.message}` });
+    }
+});

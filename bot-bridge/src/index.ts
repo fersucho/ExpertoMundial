@@ -27,6 +27,7 @@ function cleanUserId(rawId: string): string {
 // Variables globales para la identidad del bot y administración
 let botUserId = '';
 const registeredLIDs = new Set<string>();
+const authorizedGroups = new Set<string>();
 
 console.log('🤖 Inicializando puente de WhatsApp...');
 console.log(`📡 URL de Cloud Functions: ${FUNCTIONS_URL}`);
@@ -103,8 +104,18 @@ client.on('ready', async () => {
             }, { headers });
             console.log(`👑 Admin Autoregistro (LID): ${responseAlt.data.message}`);
         }
+
+        // Cargar lista de grupos autorizados
+        console.log('📡 Cargando lista de grupos autorizados desde Firestore...');
+        const groupsResponse = await axios.get(`${FUNCTIONS_URL}/obtenerGruposAutorizados`, { headers });
+        const groupsList = groupsResponse.data.groups || [];
+        authorizedGroups.clear();
+        for (const gId of groupsList) {
+            authorizedGroups.add(gId);
+        }
+        console.log(`📡 Se cargaron ${authorizedGroups.size} grupos autorizados.`);
     } catch (error: any) {
-        console.error('❌ Error en el auto-registro del administrador:', error.message);
+        console.error('❌ Error en la inicialización (auto-registro o carga de grupos autorizados):', error.message);
     }
 });
 
@@ -126,6 +137,19 @@ client.on('message_create', async (msg) => {
         'Authorization': `Bearer ${SECRET_TOKEN}`,
         'Content-Type': 'application/json'
     };
+
+    // Obtener chat y groupId
+    const chat = await msg.getChat();
+    const groupId = chat.isGroup ? chat.id._serialized : null;
+
+    // --- NUEVO: Validar autorización de grupo ---
+    if (chat.isGroup && groupId && !authorizedGroups.has(groupId)) {
+        const isMinAdmin = registeredLIDs.has(userId);
+        const isActivationCommand = text.toLowerCase().split(/\s+/)[0] === '!activargrupo';
+        if (!isMinAdmin || !isActivationCommand) {
+            return; // Ignorar en silencio
+        }
+    }
 
     // 1. Verificar si el usuario tiene un estado activo (ej: esperando nickname)
     const userState = userStates.get(userId);
@@ -194,9 +218,6 @@ client.on('message_create', async (msg) => {
     // Si no es un comando ni una opción de menú válida, ignoramos el mensaje (para evitar spam en chats)
     if (command === '') return;
 
-    const chat = await msg.getChat();
-    const groupId = chat.isGroup ? chat.id._serialized : null;
-    
     // Auto-registro dinámico para el identificador LID alternativo del administrador
     // Si el mensaje es enviado por el propio usuario (fromMe) en un chat privado y no está registrado aún
     if (msg.fromMe && !chat.isGroup && userId !== botUserId && !registeredLIDs.has(userId)) {
@@ -468,6 +489,40 @@ client.on('message_create', async (msg) => {
                     scoreA,
                     scoreB
                 }, { headers });
+                await msg.reply(response.data.message);
+                break;
+            }
+
+            case '!activargrupo': {
+                if (!chat.isGroup || !groupId) {
+                    await msg.reply('⚠️ Este comando solo se puede utilizar dentro de un grupo de WhatsApp.');
+                    break;
+                }
+                const response = await axios.post(`${FUNCTIONS_URL}/autorizarGrupo`, {
+                    userId,
+                    groupId
+                }, { headers });
+                
+                // Actualizar caché en memoria
+                authorizedGroups.add(groupId);
+                
+                await msg.reply(response.data.message);
+                break;
+            }
+
+            case '!desactivargrupo': {
+                if (!chat.isGroup || !groupId) {
+                    await msg.reply('⚠️ Este comando solo se puede utilizar dentro de un grupo de WhatsApp.');
+                    break;
+                }
+                const response = await axios.post(`${FUNCTIONS_URL}/desautorizarGrupo`, {
+                    userId,
+                    groupId
+                }, { headers });
+                
+                // Actualizar caché en memoria
+                authorizedGroups.delete(groupId);
+                
                 await msg.reply(response.data.message);
                 break;
             }

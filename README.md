@@ -77,7 +77,9 @@ El token `BOT_SECRET_TOKEN` se despliega como variable de configuración.
 El sistema cuenta con un mecanismo de **auto-registro de administrador**. En el primer inicio exitoso del bot, este tomará el número de teléfono de la cuenta vinculada y lo registrará automáticamente como el administrador global del sistema.
 
 > [!IMPORTANT]
-> **Canal de Comandos:** Todos los comandos de administrador se ejecutan exclusivamente en un **chat privado directo con el bot** (puedes usar el chat "Mensaje a ti mismo" desde tu propia cuenta o escribirle al número del bot desde otra cuenta si el bot está en un número diferente). Si intentas usarlos en un grupo, el bot los rechazará para proteger el flujo del juego.
+> **Canal de Comandos:** 
+> - Los comandos de administración de configuración (como crear partidos y registrar resultados) se ejecutan exclusivamente en un **chat privado directo con el bot**. Si intentas usarlos en un grupo, el bot los rechazará.
+> - Los comandos de autorización de canales (`!activargrupo` y `!desactivargrupo`) se ejecutan directamente **dentro del grupo de WhatsApp** que se desea activar o desactivar.
 
 ### Comandos de Administrador
 
@@ -109,14 +111,35 @@ Una vez finalizado el partido real, el administrador registra el marcador final.
     *   **Fallo Total:** `0 puntos`.
 *   **Respuesta del bot:** Muestra un desglose con los puntos acumulados por cada usuario en sus respectivos grupos.
 
+#### 3. Activar un Grupo (Dentro del Grupo)
+Autoriza al bot a operar y responder comandos dentro de este grupo de WhatsApp.
+*   **Sintaxis:** `!activargrupo`
+*   **Respuesta del bot:**
+    ```text
+    🔓 *GRUPO AUTORIZADO* 🔓
+    ──────────────────
+    Este grupo ha sido activado para jugar a *Experto Mundial*.
+    ¡Que comience el juego! ⚽
+    ```
+
+#### 4. Desactivar un Grupo (Dentro del Grupo)
+Desautoriza al bot dentro de este grupo de WhatsApp, haciendo que vuelva a estar completamente en silencio.
+*   **Sintaxis:** `!desactivargrupo`
+*   **Respuesta del bot:**
+    ```text
+    🔒 *GRUPO DESACTIVADO* 🔒
+    ──────────────────
+    El bot de *Experto Mundial* ha sido desactivado en este grupo y ya no responderá a los comandos.
+    ```
+
 ---
 
 ## 👥 Manual del Usuario
 
-Los usuarios comunes interactúan con el bot directamente desde los **grupos de WhatsApp** donde el bot esté presente.
+Los usuarios comunes interactúan con el bot directamente desde los **grupos de WhatsApp** donde el bot esté presente, **siempre y cuando el grupo haya sido activado previamente** por el administrador.
 
 > [!IMPORTANT]
-> **Canal de Comandos:** Todos los comandos de juego, menús y pronósticos rápidos solo funcionan dentro de **chats grupales**. El bot ignorará peticiones de juego recibidas por chat privado.
+> **Canal de Comandos:** Todos los comandos de juego, menús y pronósticos rápidos solo funcionan dentro de **chats grupales autorizados**. El bot ignorará peticiones de juego recibidas por chat privado.
 
 ### Formas de Interactuar
 
