@@ -223,12 +223,13 @@ client.on('message_create', async (msg) => {
     } else if (text.startsWith('!')) {
         const parts = text.split(/\s+/);
         command = parts[0].toLowerCase();
+        if (command === '!menú') command = '!menu';
         args = parts.slice(1);
     } else {
-        // Si no inicia con '!', verificamos si coincide exactamente con una letra del menú o 'menu'
+        // Si no inicia con '!', verificamos si coincide exactamente con una letra del menú o 'menu' / 'menú'
         const lowerText = text.toLowerCase();
-        if (['a', 'b', 'c', 'd', 'e', 'f', 'menu'].includes(lowerText)) {
-            command = '!' + lowerText;
+        if (['a', 'b', 'c', 'd', 'e', 'f', 'menu', 'menú'].includes(lowerText)) {
+            command = lowerText === 'menú' ? '!menu' : '!' + lowerText;
         }
     }
 
@@ -382,6 +383,10 @@ client.on('message_create', async (msg) => {
                         const matchDetails = msgMatch ? msgMatch[1] : `ID ${pred.matchId}: ${pred.predictA} - ${pred.predictB}`;
                         return `• ${matchDetails} ✅ Guardado`;
                     } catch (error: any) {
+                        // Si es un error 403 (No registrado o Sin permisos), propagamos el error para abortar el Promise.all
+                        if (error.response && error.response.status === 403) {
+                            throw error;
+                        }
                         let errMsg = 'Error de conexión';
                         if (error.response && error.response.data && error.response.data.message) {
                             errMsg = error.response.data.message;
@@ -391,17 +396,25 @@ client.on('message_create', async (msg) => {
                     }
                 });
                 
-                const responseLines = await Promise.all(promises);
-                
-                const summaryText = 
-                    `🔮 *PRONÓSTICOS PROCESADOS* 🔮\n` +
-                    `──────────────────\n` +
-                    `👤 *${senderPushName}*\n\n` +
-                    responseLines.join('\n') + `\n\n` +
-                    `──────────────────\n` +
-                    `_Usa la letra *B* para ver tus pronósticos activos._`;
+                try {
+                    const responseLines = await Promise.all(promises);
                     
-                await msg.reply(summaryText);
+                    const summaryText = 
+                        `🔮 *PRONÓSTICOS PROCESADOS* 🔮\n` +
+                        `──────────────────\n` +
+                        `👤 *${senderPushName}*\n\n` +
+                        responseLines.join('\n') + `\n\n` +
+                        `──────────────────\n` +
+                        `_Usa la letra *B* para ver tus pronósticos activos._`;
+                        
+                    await msg.reply(summaryText);
+                } catch (error: any) {
+                    if (error.response && error.response.status === 403 && error.response.data && error.response.data.message) {
+                        await msg.reply(error.response.data.message);
+                    } else {
+                        throw error; // Propagar otros errores al catch general
+                    }
+                }
                 break;
             }
 
@@ -555,7 +568,12 @@ client.on('message_create', async (msg) => {
     } catch (error: any) {
         console.error('❌ Error al procesar petición a Cloud Function:', error.message);
         if (error.response && error.response.data && error.response.data.message) {
-            await msg.reply(`❌ Error: ${error.response.data.message}`);
+            const errMsg = error.response.data.message;
+            if (errMsg.startsWith('⚠️') || errMsg.startsWith('❌')) {
+                await msg.reply(errMsg);
+            } else {
+                await msg.reply(`❌ Error: ${errMsg}`);
+            }
         } else {
             await msg.reply('❌ Lo siento, hubo un problema interno en el servidor. Por favor, intenta de nuevo más tarde.');
         }

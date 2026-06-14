@@ -230,7 +230,7 @@ export const pronosticar = onRequest({ invoker: 'public' }, async (req, res) => 
         const userRef = db.collection('users').doc(userId);
         const userDoc = await userRef.get();
         if (!userDoc.exists) {
-            res.json({ message: '⚠️ No estás registrado en el juego. Escribe *E* para registrar tu nickname primero.' });
+            res.status(403).json({ message: '⚠️ No estás registrado en el juego. Escribe *E* para registrar tu nickname primero.' });
             return;
         }
         const user = userDoc.data()!;
@@ -331,20 +331,31 @@ export const obtenerMisPronosticos = onRequest({ invoker: 'public' }, async (req
             return;
         }
 
-        let responseText = `🔮 *PRONÓSTICOS DE ${userName.toUpperCase()}* 🔮\n──────────────────\n`;
-
+        const predictionsList: any[] = [];
         predSnapshot.forEach(doc => {
             const pred = doc.data();
             const match = matchesMap[pred.matchId];
             if (match) {
-                responseText += `⚽ *${match.teamA} vs ${match.teamB}*\n`;
-                responseText += `   Tu predicción: *${pred.predictA} - ${pred.predictB}*\n`;
-                
-                if (match.status === 'finished') {
-                    responseText += `   Resultado real: *${match.scoreA} - ${match.scoreB}* (${pred.pointsEarned} pts)\n\n`;
-                } else {
-                    responseText += `   Resultado real: ⏳ Pendiente\n\n`;
-                }
+                const matchDate = match.date ? match.date.toDate() : new Date();
+                predictionsList.push({ pred, match, matchDate });
+            }
+        });
+
+        // Ordenar en memoria por fecha del partido descendente (más recientes primero)
+        predictionsList.sort((a, b) => b.matchDate.getTime() - a.matchDate.getTime());
+
+        let responseText = `🔮 *PRONÓSTICOS DE ${userName.toUpperCase()}* 🔮\n──────────────────\n`;
+
+        predictionsList.forEach(item => {
+            const pred = item.pred;
+            const match = item.match;
+            responseText += `⚽ *${match.teamA} vs ${match.teamB}*\n`;
+            responseText += `   Tu predicción: *${pred.predictA} - ${pred.predictB}*\n`;
+            
+            if (match.status === 'finished') {
+                responseText += `   Resultado real: *${match.scoreA} - ${match.scoreB}* (${pred.pointsEarned} pts)\n\n`;
+            } else {
+                responseText += `   Resultado real: ⏳ Pendiente\n\n`;
             }
         });
 
