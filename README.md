@@ -315,3 +315,49 @@ Para administrar y ver los logs del bot desde cualquier parte del mundo de forma
     ```bash
     systemctl --user enable --now rpi-connect
     ```
+
+---
+
+## 🔒 Seguridad y Transición a Producción
+
+Este proyecto cuenta con una arquitectura de seguridad diseñada para proteger la integridad de los datos y evitar accesos no autorizados. A continuación, se detallan las medidas de seguridad actuales y las pautas para pasar a un entorno comercial con clientes.
+
+### 1. Seguridad en Firestore (Base de Datos)
+La base de datos tiene configuradas las reglas más estrictas de Firebase en [firestore.rules](file:///c:/AiChoice/ExpertoMundial/firebase/firestore.rules):
+```javascript
+match /{document=**} {
+    allow read, write: if false;
+}
+```
+*   **Acceso Denegado por Defecto:** Ningún atacante ni cliente externo puede leer o escribir directamente en la base de datos a través de internet, incluso si conocen el ID del proyecto Firebase.
+*   **Acceso Mediado por Servidor:** Todo el flujo de datos es gestionado exclusivamente mediante el **Firebase Admin SDK** dentro del entorno seguro de Cloud Functions.
+
+### 2. Autenticación de Cloud Functions
+Los endpoints HTTPS públicos de Firebase están protegidos mediante el helper `isAuthorized(req)`:
+*   Cada petición HTTP entrante requiere la cabecera `Authorization: Bearer <BOT_SECRET_TOKEN>`.
+*   El token se valida estáticamente con la variable de entorno configurada. Si es inválido, se rechaza de inmediato con un error `401 Unauthorized`.
+*   **Validaciones y Errores:** Las validaciones de negocio (partidos vencidos, IDs inexistentes) devuelven un código `400 Bad Request` indicando el motivo al bot. Los errores internos del servidor (HTTP 500) registran detalladamente el fallo en la consola de Google Cloud (`console.error`) y retornan un mensaje genérico al usuario (`❌ Lo siento, hubo un problema al procesar tu solicitud. Por favor, informa al administrador.`) para evitar la fuga de información sensible o código interno.
+
+### 3. Seguridad Local en la Raspberry Pi 4
+*   **Sin Puertos Abiertos:** El bot-bridge realiza conexiones salientes (outbound) hacia WhatsApp y Firebase. No se necesita habilitar el direccionamiento de puertos (port forwarding) en el router doméstico, manteniendo la Raspberry Pi invisible desde internet.
+*   **Raspberry Pi Connect:** Permite el acceso SSH Web seguro mediante WebRTC sin abrir puertos de red ni exponer la máquina.
+
+### 🚀 Directrices para Entornos Comerciales (Clientes Reales)
+Si deseas replicar esta arquitectura para entregar soluciones a clientes finales, te recomendamos aplicar las siguientes buenas prácticas:
+
+1.  **Google Cloud Secret Manager (Gestión de Credenciales):**
+    En lugar de almacenar claves API en archivos locales `.env` en Cloud Functions, almacénalas en **Secret Manager**. Google Cloud se encargará de guardarlas de forma encriptada e inyectarlas dinámicamente en el entorno de ejecución, ofreciendo control de accesos por roles (IAM) y auditoría de accesos.
+2.  **Estrategias de Rotación de Tokens sin Caídas (Zero-Downtime):**
+    Si necesitas rotar una clave API sin interrumpir el funcionamiento de los bots de tus clientes:
+    *   Sube el nuevo token como una nueva versión del secreto en **Secret Manager**.
+    *   Configura temporalmente tu Cloud Function para validar y aceptar tanto la versión anterior como la nueva.
+    *   Actualiza los bots clientes de forma programada. Una vez todos migrados, inactiva la versión del secreto antiguo.
+3.  **Implementación de OAuth 2.0 / Client Credentials Flow:**
+    En lugar de compartir un único token estático de API para todos los clientes:
+    *   Crea un servidor de autenticación (ej. Auth0 o Firebase Auth para cuentas de servicio).
+    *   Asigna a cada bot cliente un **Client ID** y un **Client Secret** (o llaves privadas asimétricas).
+    *   El bot solicitará dinámicamente un token de acceso temporal JWT (con vencimiento de 1 hora) al iniciar, y lo renovará en segundo plano. Esto te permite revocar el acceso a un cliente específico al instante deshabilitando sus credenciales en el servidor central, sin afectar a los demás.
+4.  **Hardenización de la Raspberry Pi OS:**
+    *   Cambia obligatoriamente la contraseña por defecto del usuario principal (`passwd`).
+    *   Deshabilita el login por contraseña en SSH en `/etc/ssh/sshd_config` y utiliza autenticación exclusiva por llaves públicas SSH.
+    *   Instala pm2 logrotate (`pm2 install pm2-logrotate`) para evitar que el almacenamiento de la tarjeta SD se llene con archivos de log.
