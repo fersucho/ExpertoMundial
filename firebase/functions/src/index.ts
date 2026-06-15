@@ -26,6 +26,14 @@ function sendUnauthorized(res: any) {
     res.status(401).json({ message: 'No autorizado. Token incorrecto o ausente.' });
 }
 
+// Helper para registrar y responder a errores internos del servidor (HTTP 500)
+function handleServerError(res: any, actionName: string, error: any) {
+    console.error(`❌ Error al ${actionName}:`, error);
+    res.status(500).json({ 
+        message: '❌ Lo siento, hubo un problema interno en el servidor al procesar tu solicitud. Por favor, intenta de nuevo más tarde.' 
+    });
+}
+
 /**
  * 1. Registrar o actualizar un usuario
  */
@@ -88,7 +96,7 @@ export const registrarUsuario = onRequest({ invoker: 'public' }, async (req, res
             });
         }
     } catch (error: any) {
-        res.status(500).json({ message: `Error al registrar usuario: ${error.message}` });
+        handleServerError(res, 'registrar usuario', error);
     }
 });
 
@@ -154,7 +162,7 @@ export const crearPartido = onRequest({ invoker: 'public' }, async (req, res) =>
             message: `📅 ¡Partido creado con éxito!\n👉 *ID: ${nextId}*\n⚽ *${teamA} vs ${teamB}*\n⏰ Límite (Quito): ${dateStr}`
         });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al crear partido: ${error.message}` });
+        handleServerError(res, 'crear partido', error);
     }
 });
 
@@ -209,7 +217,7 @@ export const obtenerPartidos = onRequest({ invoker: 'public' }, async (req, res)
             '_Ejemplo: *1: 2-1*_';
         res.json({ message: responseText });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al obtener partidos: ${error.message}` });
+        handleServerError(res, 'obtener partidos', error);
     }
 });
 
@@ -287,7 +295,7 @@ export const pronosticar = onRequest({ invoker: 'public' }, async (req, res) => 
             message: `✅ ¡Pronóstico guardado!\n🔮 *${user.name}* predijo para este grupo:\n👉 *${match.teamA} ${predictA} - ${predictB} ${match.teamB}*`
         });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al registrar pronóstico: ${error.message}` });
+        handleServerError(res, 'registrar pronóstico', error);
     }
 });
 
@@ -362,7 +370,7 @@ export const obtenerMisPronosticos = onRequest({ invoker: 'public' }, async (req
         responseText += '──────────────────';
         res.json({ message: responseText });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al obtener pronósticos: ${error.message}` });
+        handleServerError(res, 'obtener pronósticos', error);
     }
 });
 
@@ -407,7 +415,7 @@ export const obtenerRanking = onRequest({ invoker: 'public' }, async (req, res) 
         responseText += '──────────────────\n_¡Demuestra quién sabe más de fútbol!_ ⚽';
         res.json({ message: responseText });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al obtener tabla de posiciones: ${error.message}` });
+        handleServerError(res, 'obtener tabla de posiciones', error);
     }
 });
 
@@ -515,7 +523,7 @@ export const actualizarResultado = onRequest({ invoker: 'public' }, async (req, 
         summaryText += '──────────────────\n_Usa `!ranking` para ver cómo quedó la tabla de posiciones._';
         res.json({ message: summaryText });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al actualizar resultado: ${error.message}` });
+        handleServerError(res, 'actualizar resultado', error);
     }
 });
 
@@ -556,7 +564,7 @@ export const obtenerResultados = onRequest({ invoker: 'public' }, async (req, re
         responseText += '──────────────────';
         res.json({ message: responseText });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al obtener resultados: ${error.message}` });
+        handleServerError(res, 'obtener resultados', error);
     }
 });
 
@@ -590,7 +598,7 @@ export const autorizarGrupo = onRequest({ invoker: 'public' }, async (req, res) 
             message: `🔓 *GRUPO AUTORIZADO* 🔓\n──────────────────\nEste grupo ha sido activado para jugar a *Experto Mundial*.\n¡Que comience el juego! ⚽`
         });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al autorizar grupo: ${error.message}` });
+        handleServerError(res, 'autorizar grupo', error);
     }
 });
 
@@ -620,7 +628,7 @@ export const desautorizarGrupo = onRequest({ invoker: 'public' }, async (req, re
             message: `🔒 *GRUPO DESACTIVADO* 🔒\n──────────────────\nEl bot de *Experto Mundial* ha sido desactivado en este grupo y ya no responderá a los comandos.`
         });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al desautorizar grupo: ${error.message}` });
+        handleServerError(res, 'desautorizar grupo', error);
     }
 });
 
@@ -638,7 +646,7 @@ export const obtenerGruposAutorizados = onRequest({ invoker: 'public' }, async (
         });
         res.json({ groups });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al obtener grupos autorizados: ${error.message}` });
+        handleServerError(res, 'obtener grupos autorizados', error);
     }
 });
 
@@ -656,6 +664,6 @@ export const obtenerAdministradores = onRequest({ invoker: 'public' }, async (re
         });
         res.json({ admins });
     } catch (error: any) {
-        res.status(500).json({ message: `Error al obtener administradores: ${error.message}` });
+        handleServerError(res, 'obtener administradores', error);
     }
 });
