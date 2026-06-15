@@ -367,6 +367,14 @@ client.on('message_create', async (msg) => {
                     break;
                 }
 
+                // Verificar si hay partidos repetidos en el mensaje
+                const matchIds = multiPredictions.map(p => p.matchId);
+                const uniqueMatchIds = new Set(matchIds);
+                if (uniqueMatchIds.size !== matchIds.length) {
+                    await msg.reply('⚠️ *Error:* Has enviado pronósticos repetidos para el mismo partido en un solo mensaje. Por favor, corrígelo y vuelve a intentarlo.');
+                    break;
+                }
+
                 console.log(`🔮 Procesando ${multiPredictions.length} pronósticos de ${senderPushName} (${userId})`);
                 
                 const promises = multiPredictions.map(async (pred) => {
