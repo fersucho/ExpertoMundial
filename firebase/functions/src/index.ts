@@ -30,7 +30,7 @@ function sendUnauthorized(res: any) {
 function handleServerError(res: any, actionName: string, error: any) {
     console.error(`❌ Error al ${actionName}:`, error);
     res.status(500).json({ 
-        message: '❌ Lo siento, hubo un problema interno en el servidor al procesar tu solicitud. Por favor, intenta de nuevo más tarde.' 
+        message: '❌ Lo siento, hubo un problema al procesar tu solicitud. Por favor, informa al administrador.' 
     });
 }
 
